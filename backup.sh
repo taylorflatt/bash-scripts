@@ -5,8 +5,6 @@
 # Recursive backup script that will backup both regular files as well as 
 # directories. Meant to be run as a cron script.
 #
-# This version only supports backing up of a single file to a directory.
-#
 # Usage: backup SOURCE DESTINATION -[d]
 
 function print_usage()
@@ -22,6 +20,11 @@ fi
 
 source=$1
 destination=$2
+
+# Font colors for error/success messages.
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+END_COLOR=`tput sgr0`
 
 # Assign a date value if required.
 if [[ $# -eq 3 ]]; then
@@ -50,7 +53,7 @@ function copy_file()
 		if cp --force "$fileSource" "$newFile"; then
 			echo "Copying $fileSource..."
 		else
-			echo "Error copying $fileSource"
+			echo "${RED}Error copying $fileSource.${END_COLOR}"
 			exit 1;
 		fi
 	else
@@ -71,14 +74,14 @@ function copy_directory()
 	local absDestDir=$(realpath "$fileDest" 2> /dev/null)
 	
 	if [[ -z "$absDestDir" ]]; then
-		echo "Error getting the proper destination path."
+		echo "${RED}Error getting the proper destination path.${END_COLOR}"
 		exit 1;
 	fi
 	
 	# Check if the backup directory exists. If it doesn't, create it.
 	if [[ ! -d "$fileDest" ]]; then
 		if ! mkdir "$fileDest" 2> /dev/null; then
-			echo "Error creating the directory: $fileDest"
+			echo "${RED}Error creating the directory: $fileDest${END_COLOR}"
 			exit 1;
 		fi
 	fi
@@ -107,7 +110,7 @@ else
 	copy_file "$source" "$destination"
 fi
 
-echo "Completed backup of file(s)."
+echo "${GREEN}Completed backup of file(s).${END_COLOR}"
 
 exit 0
 #EOF
