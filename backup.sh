@@ -1,11 +1,14 @@
 #!/bin/bash
 
-# Version 1.2
+# Version 1.3
 # Author: Taylor Flatt
-# Recursive backup script that will backup both regular files as well as 
-# directories. Meant to be run as a cron script.
+# Recursive backup script that will backup both regular files as well as directories. 
+# Meant to be run as a cron script.
 #
-# Usage: backup SOURCE DESTINATION -[d]
+# The -d option adds the date to the destination (root) folder if one is created. If a 
+# single file is being backed up, then that file will have the date added to its name.
+#
+# Usage: backup SOURCE DESTINATION [-d]
 
 function print_usage()
 {
@@ -40,18 +43,25 @@ fi
 # Function that will copy a file from one directory to another.
 # Parameter 1: A specific file that will be copied to another location.
 # Parameter 2: The destination directory of the file. (Backup location).
+# Parameter 3: (Optional) If backing up a single file, then it will place the 
+# date on the file if the date option is checked. Include any non-null value for 
+# this behavior such as the string "Single_File".
 function copy_file()
 {
 	local fileSource=$1
 	local fileDest=$2
 	
 	# Create the name of the new (backup) file.
-	newFile="$fileDest"/"${fileSource##*/}".bak
+	if [[ ! -z $3 && ! -z "$date" ]]; then
+		newFile="$fileDest"/"${fileSource##*/}$date".bak
+	else
+		newFile="$fileDest"/"${fileSource##*/}".bak
+	fi
 	
 	# If the file already exists, don't copy it.
 	if [[ ! -f "$newFile" ]] || ! diff "$fileSource" "$newFile" &> /dev/null; then
 		if cp --force "$fileSource" "$newFile"; then
-			echo "Copying $fileSource..."
+			echo "Copying $fileSource to $newFile..."
 		else
 			echo "${RED}Error copying $fileSource.${END_COLOR}"
 			exit 1;
@@ -107,7 +117,8 @@ function copy_directory()
 if [[ -d "$source" ]]; then
 	copy_directory "$source" "$destination"
 else
-	copy_file "$source" "$destination"
+	destination=$2
+	copy_file "$source" "$destination" "single_file"
 fi
 
 echo "${GREEN}Completed backup of file(s).${END_COLOR}"
