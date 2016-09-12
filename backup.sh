@@ -1,43 +1,66 @@
 #!/bin/bash
 
-# Version 1.3
+# Version 1.4
 # Author: Taylor Flatt
 # Recursive backup script that will backup both regular files as well as directories. 
 # Meant to be run as a cron script.
 #
-# The -d option adds the date to the destination (root) folder if one is created. If a 
+# The -t option adds the date to the destination (root) folder if one is created. If a 
 # single file is being backed up, then that file will have the date added to its name.
 #
-# Usage: backup SOURCE DESTINATION [-d]
+# Usage: backup SOURCE DESTINATION [-t]
 
 function print_usage()
 {
-	echo "Usage: $0 SOURCE DESTINATION [-d]"
+	echo "Usage: $0 -s SOURCE -d DESTINATION [-t]"
 }
 
 # Check arguments
-if [[ $# < 2 || $# > 3 ]]; then
+if [[ $# < 2 || $# > 5 ]]; then
 	print_usage
 	exit 1;
 fi
 
-source=$1
-destination=$2
+source=
+destination=
+date=
 
 # Font colors for error/success messages.
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 END_COLOR=`tput sgr0`
 
-# Assign a date value if required.
-if [[ $# -eq 3 ]]; then
-	if [[ $3 == "-d" ]]; then
+# Parse the arguments.
+while getopts ":s:d:t" opt; do
+	case $opt in
+	s)
+		source=$OPTARG
+		echo "Source was set to: $OPTARG"
+		;;
+	d)
+		destination=$OPTARG
+		echo "Destination was set to: $OPTARG"
+		;;
+	t)
 		date=`date "+-%Y-%m-%d"`
-		destination="$destination$date"
-	else
+		echo "The program will use a date in the naming schema."
+		;;
+	?)
 		print_usage
-		exit 1;
-	fi
+		exit 1	
+		;;
+	esac
+done
+
+# These options are required, error if they aren't set.
+if [[ -z $source ]] || [[ -z $destination ]]; then
+	print_usage
+	exit 1
+fi
+
+# Set here so it isn't accidentally overwritten above.
+if [[ ! -z $date ]]; then
+	destination="$destination$date"
 fi
 
 # Function that will copy a file from one directory to another.
@@ -117,8 +140,7 @@ function copy_directory()
 if [[ -d "$source" ]]; then
 	copy_directory "$source" "$destination"
 else
-	destination=$2
-	copy_file "$source" "$destination" "single_file"
+	copy_file "$source" "$destination" "Single_File"
 fi
 
 echo "${GREEN}Completed backup of file(s).${END_COLOR}"
