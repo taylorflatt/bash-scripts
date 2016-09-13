@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version 0.5
+# Version 0.4
 # Author: Taylor Flatt
 # A prune script that will remove files in a directory who have existed for longer than 
 # a specified number of days.
@@ -9,6 +9,12 @@
 # the safest option in deleting files. It leaves at least the newest backup file.
 #
 # Usage: prune -d DIRECTORY -n NUM_DAYS [-a]
+
+# Prevent Root and Sudo
+if [[ $EUID -eq 0 ]] || [[ -z $SUDO_USER ]]; then
+	echo "This script cannot be invoked as an elevated user to prevent potentially undesired effects."
+	exit 1
+fi
 
 function print_usage()
 {
@@ -95,30 +101,30 @@ echo "Number of files found: $numFiles"
 # WARNING: Files whose names begin with a dot will not be checked
 function newest_matching_file()
 {
-    # Use ${1-} instead of $1 in case 'nounset' is set
-    local -r glob_pattern=${1-}
+	# Use ${1-} instead of $1 in case 'nounset' is set
+	local -r globPattern=${1-}
 
-    if (( $# != 1 )) ; then
-        echo 'Usage: newest_matching_file GLOB_PATTERN' >&2
-        return 1
-    fi
+	if (( $# != 1 )) ; then
+		echo 'Usage: newest_matching_file GLOB_PATTERN' >&2
+		return 1
+	fi
 
     # To avoid printing garbage if no files match the pattern, set
     # 'nullglob' if necessary
-    local -i need_to_unset_nullglob=0
+    local -i unsetNullglob=0
     if [[ ":$BASHOPTS:" != *:nullglob:* ]] ; then
         shopt -s nullglob
-        need_to_unset_nullglob=1
+        unsetNullglob=1
     fi
 
-    for file in $glob_pattern ; do
+    for file in $globPattern ; do
         [[ -z $newestFile || $file -nt $newestFile ]] \
             && newestFile=$file
     done
 
     # To avoid unexpected behaviour elsewhere, unset nullglob if it was
     # set by this function
-    (( need_to_unset_nullglob )) && shopt -u nullglob
+    (( unsetNullglob )) && shopt -u nullglob
 
     return 0
 }
