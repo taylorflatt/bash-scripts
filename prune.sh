@@ -33,7 +33,7 @@ GREEN=`tput setaf 2`
 END_COLOR=`tput sgr0`
 
 # Parse the arguments.
-while getopts ":s:d:a" opt; do
+while getopts ":d:n:a" opt; do
 	case $opt in
 	d)
 		directory=$OPTARG
@@ -43,6 +43,7 @@ while getopts ":s:d:a" opt; do
 		;;
 	a)
 		automated="TRUE"
+		;;
 	?)
 		print_usage
 		exit 1	
@@ -50,10 +51,32 @@ while getopts ":s:d:a" opt; do
 	esac
 done
 
+# Make sure the inputs are not empty and assigned.
 if [[ -z $directory ]] || [[ -z $numDays ]]; then
 	print_usage
 	exit 1
 fi
+
+# Make sure the input is a valid directory.
+if [[ ! -d $directory ]]; then
+	echo "${RED}DIRECTORY must be a real and accessible directory.${END_COLOR}"
+	print_usage
+	exit 1
+fi
+
+# Only want a positive integer, compare bitwise.
+expr='^([1-9][0-9]?)+$'
+if [[ ! $numDays =~ $expr ]]; then
+	echo "${RED}NUM_DAYS must be a positive non-zero integer!${END_COLOR}"
+	print_usage
+	exit 1
+fi
+
+echo "Directory: $directory"
+echo "Number of Days: $numDays"
+echo "Automated: $automated"
+echo "Newest File: $newestFile"
+echo "Number of files found: $numFiles"
 
 # Author: pjh
 # Print the newest file, if any, matching the given pattern
@@ -65,7 +88,7 @@ function newest_matching_file()
     local -r glob_pattern=${1-}
 
     if (( $# != 1 )) ; then
-        echo 'usage: newest_matching_file GLOB_PATTERN' >&2
+        echo 'Usage: newest_matching_file GLOB_PATTERN' >&2
         return 1
     fi
 
@@ -89,7 +112,6 @@ function newest_matching_file()
     return 0
 }
 
-# Author: Taylor Flatt
 # Removes all files except the newest file as determined by the 
 # newest_matching_file function.
 # Note: It will NOT remove the CWD.
@@ -115,7 +137,6 @@ function keep_newest_file()
 	done
 }
 
-# Author: Taylor Flatt
 # Removes files depending on user input.
 # Parameter 1: The directory from which files will be removed.
 # Parameter 2: The number of days from the current date in which files prior 
@@ -131,7 +152,7 @@ function keep_newest_file()
 # Note: In no case will it remove the CWD.
 function remove_files()
 {
-	if [[ $# < 2 ]] || [[ $# > 3]]; then
+	if [[ $# < 2 ]] || [[ $# > 3 ]]; then
 		echo "Usage: $0 DIRECTORY DAYS [AUTOMATED]"
 	fi
 	
@@ -144,7 +165,7 @@ function remove_files()
 	
 	# Move to the backup directory.
 	if ! $(cd "$dir"); then
-		echo "{RED} Error changing directories to $dir{END_COLOR}"
+		echo "${RED}Error changing directories to $dir ${END_COLOR}"
 		exit 1
 	fi
 	
@@ -167,7 +188,7 @@ function remove_files()
 	
 	# Case that should never happen.
 	if [[ numFiles > totalFiles ]]; then
-		echo "{RED} Cannot delete more files than actually exist. Something went wrong.{END_COLOR}."
+		echo "{RED}Cannot delete more files than actually exist. Something went wrong.{END_COLOR}."
 		exit 1
 	# Case in which all files could be removed.
 	elif [[ numFiles -eq totalFiles ]]; then	
@@ -176,7 +197,7 @@ function remove_files()
 			local index=1
 			# Loop a confirmation prompt to the user to make sure this is what they would like to do.
 			while [ index -eq 1 ]; do
-				echo -n "All files in $dir are over $days days old. Would you like to remove them all? Warning: {RED}This is not recoverable:{END_COLOR} (y/n/q (quit)):"
+				echo -n "All files in $dir are over $days days old. Would you like to remove them all? Warning: ${RED}This is not recoverable: ${END_COLOR} (y/n/q (quit)):"
 				read delPrompt
 				
 				case "delPrompt" in
@@ -205,34 +226,34 @@ function remove_files()
 		# Remove all but the newest file.
 		else
 			keep_newest_file "$dir" # Removes all files except for the newest.
-			
-	# Remove all files prior to the number of dates mentioned.
-	else 
-		for file in "$dir"; do
-		local fileLastMod=$(date -r "$file" +%s)
-		
-		# File is marked as needing to be removed.
-		if [[ "$date" -ge "$fileLastMod" ]]; then
-			# Don't remove the root (backup) directory.
-			if [[ "$file" -eq "$dir" ]]; then
-				echo "Root directory, we should skip."
-				echo "Skipping $dir..."
-			elif ! rm -ri "$file"; then
-				echo "Error deleting $file..."
-			fi
 		fi
-	done
-fi
+	# Remove all files prior to the number of dates mentioned.
+	else
+		for file in "$dir"; do
+			local fileLastMod=$(date -r "$file" +%s)
+			
+			# File is marked as needing to be removed.
+			if [[ "$date" -ge "$fileLastMod" ]]; then
+				# Don't remove the root (backup) directory.
+				if [[ "$file" -eq "$dir" ]]; then
+					echo "Root directory, we should skip."
+					echo "Skipping $dir..."
+				elif ! rm -ri "$file"; then
+					echo "Error deleting $file..."
+				fi
+			fi
+		done
+	fi
 }
 
 # Run the prune.
-if [[ -z "$automated" ]]; then
-	remove_files "$dir" "$days"
-else
-	remove_files "$dir" "$days" "AUTOMATE"
-fi
+#if [[ -z "$automated" ]]; then
+#	remove_files "$dir" "$days"
+#else
+#	remove_files "$dir" "$days" "AUTOMATE"
+#fi
 
-echo "{GREEN}Successfully removed $numFiles from $dir!{END_COLOR}"
+echo "${GREEN}Successfully removed $numFiles from $dir! ${END_COLOR}"
 
 exit 0
 #EOF
