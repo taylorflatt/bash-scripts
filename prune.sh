@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version 0.2
+# Version 0.3
 # Author: Taylor Flatt
 # A prune script that will remove files in a directory who have existed for longer than 
 # a specified number of days.
@@ -25,6 +25,7 @@ directory=
 numDays=
 automated=
 newestFile=
+numFiles=
 
 # Font colors for error/success messages.
 RED=`tput setaf 1`
@@ -125,7 +126,8 @@ function keep_newest_file()
 # Usage: remove_files /home/user1/directory7/backupDir 20 
 # Usage: remove_files /home/user1/directory7/backupDir 20 TRUE
 #
-# Note: ANY input for a third parameter will be read as an automated task.
+# Note: ANY input for a third parameter will be read as an automated task. Typically 
+# passing in the value set for $automated in the main script parameter works just as well.
 # Note: In no case will it remove the CWD.
 function remove_files()
 {
@@ -147,7 +149,6 @@ function remove_files()
 	fi
 	
 	# This way of processing is a bit more costly but allows a safety check.
-	local numFiles=
 	local totalFiles=
 	local date=$(date -d "$days days ago" +%s)
 	
@@ -177,25 +178,29 @@ function remove_files()
 			while [ index -eq 1 ]; do
 				echo -n "All files in $dir are over $days days old. Would you like to remove them all? Warning: {RED}This is not recoverable:{END_COLOR} (y/n/q (quit)):"
 				read delPrompt
-						
-				# Remove all files.
-				if [[ $delPrompt == "y" ]]; then
-					index=0 # Exit loop
-					for file in "$dir"; do
-						echo "Deleting file: $file"
-						if ! rm -r "$file"; then
-							echo "Error deleting $file..."
-						fi
-					done
-				# Quit the program.
-				elif [[ $delPrompt == "q" ]]; then
-					echo "Exiting without making any changes..."
-					exit 0
-				# Remove all but the newest file.
-				elif [[ $delPrompt == "n" ]]; then
-					index=0 # Exit loop
-					keep_newest_file "$dir" # Removes all files except for the newest.
-				fi
+				
+				case "delPrompt" in
+					"y")
+						index=0 # Exit loop
+						for file in "$dir"; do
+							echo "Deleting file: $file"
+							if ! rm -r "$file"; then
+								echo "Error deleting $file..."
+							fi
+						done
+						;;
+					"q")
+						echo "Exiting without making any changes..."
+						exit 0
+						;;
+					"n")
+						index=0 # Exit loop
+						keep_newest_file "$dir" # Removes all files except for the newest.
+						;;
+					*)
+						echo "Error: Please choose an option."
+						;;
+				esac
 			done
 		# Remove all but the newest file.
 		else
@@ -219,6 +224,15 @@ function remove_files()
 	done
 fi
 }
+
+# Run the prune.
+if [[ -z "$automated" ]]; then
+	remove_files "$dir" "$days"
+else
+	remove_files "$dir" "$days" "AUTOMATE"
+fi
+
+echo "{GREEN}Successfully removed $numFiles from $dir!{END_COLOR}"
 
 exit 0
 #EOF
