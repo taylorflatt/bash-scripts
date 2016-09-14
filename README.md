@@ -30,7 +30,7 @@ A prune script which removes files in a directory older than a set number of day
 ###File Parameters
 -d,--directory:   The directory from which files will be pruned.<br />
 -n,--days:        Files modded prior to n days ago is subject to pruning. <br />
--a,--automated:   Runs the script without interaction and perform the least destructive operations.
+-a,--automated:   Runs the script without interaction and perform the least destructive operations. <br />
 -h,--help:        Displays information on how to use the script in detail.
 
 ###Examples
