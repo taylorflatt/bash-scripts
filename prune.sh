@@ -49,7 +49,7 @@ function print_help()
 	echo ""
 	echo ""
 	
-	echo "Full documentation and source code can be found at: <www.github.com/taylorflatt/> under the appropriate repository."
+	echo "Full documentation and source code can be found at: <www.github.com/taylorflatt/bash-scripts> under the appropriate repository."
 }
 
 # Check arguments
