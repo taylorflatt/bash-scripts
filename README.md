@@ -22,7 +22,7 @@ Simple bash script I use to run scheduled backups in Linux.
 - If using the -t parameter on a directory, only the root directory will be given the timestamp. The files contained within will not contain the timestamp.
 
 # [Prune Script](https://github.com/taylorflatt/bash-scripts/blob/master/prune.sh)
-A prune script which removes files in a directory older than a set number of days prior.
+A prune script which removes files in a directory older than a set number of days prior. This can be added to the crontab and run non-interactively with the -a flag on a backup directory to remove old backups.
 
 ###Usage
 `./prune.sh -d DIRECTORY -n NUM_DAYS [-a]`
