@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version 0.4
+# Version 0.5
 # Author: Taylor Flatt
 # A prune script that will remove files in a directory who have existed for longer than 
 # a specified number of days.
@@ -42,6 +42,7 @@ numDays=
 automated=
 newestFile=
 numFiles=
+numFilesDeleted=0
 
 # Font colors for error/success messages.
 RED=`tput setaf 1`
@@ -84,19 +85,9 @@ if [[ ! -d $directory ]]; then
 	exit 1
 fi
 
-# Make sure the number of days is not zero.
-if [[ $numDays -eq 0 ]]; then
-        echo "Don't put zero"
-        exit 1
-fi
-
 # Only want a positive integer, compare bitwise.
-expr='^(0|[1-9][0-9]*)$'
+expr='^[1-9][0-9]*'
 if [[ ! $numDays =~ $expr ]]; then
-	echo "${RED}NUM_DAYS must be a positive non-zero integer!${END_COLOR}"
-	print_usage
-	exit 1
-elif [[ $numDays -eq 0 ]]; then
 	echo "${RED}NUM_DAYS must be a positive non-zero integer!${END_COLOR}"
 	print_usage
 	exit 1
@@ -142,6 +133,30 @@ function newest_matching_file()
     return 0
 }
 
+# Prompt for the user to determine if a file is to be removed.
+# WARNING: This will also actually remove files if the choice is to remove a file.
+function remove_file_prompt()
+{
+	local rmChoice=
+	while [[ "$rmChoice" != "y" ]] && [[ "$rmChoice" != "n" ]]; do
+		echo -n "Would you like to remove $file? (y/n):"
+		read rmChoice
+		
+		case "$rmChoice" in
+			"y")
+				rm -r "$file"
+				((numFilesDeleted++))
+				;;
+			"n")
+				echo "Skipping $file..."
+				;;
+			*)
+				echo "Error: Please choose a valid option of y or n."
+				;;
+		esac
+	done
+}
+
 # Removes all files except the newest file as determined by the 
 # newest_matching_file function.
 # Note: It will NOT remove the CWD.
@@ -167,18 +182,16 @@ function keep_newest_file()
 			echo "Skipping $file since it is the newest file..."
 		else
 			# Don't remove the root (backup) directory.
-			if [[ "$file" -eq "$dir" ]]; then
+			if [[ "$file" == "$dir" ]]; then
 				echo "Root directory, we should skip."
 				echo "Skipping $dir..."
 			elif [[ -z $automated ]]; then
-				if rm -ir "$file"; then		# Require interaction
-					echo "Deleting file: $file"
-				else
-					echo "Error deleting $file..."
-				fi
+				remove_file_prompt
 			else
-				if rm -r "$file"; then		# No interaction
+				# Force the removal in case the file is write protected.
+				if rm -rf "$file"; then		# No interaction
 					echo "Deleting file: $file"
+					((numFilesDeleted++))
 				else
 					echo "Error deleting $file..."
 				fi
@@ -217,15 +230,18 @@ function remove_files()
 	fi
 	
 	# Make sure the input is a valid directory.
-	if [[ ! -d $dir ]]; then
+	if [[ ! -d "$dir" ]]; then
+		echo "(DEBUG) Remove_Files: $dir is NOT a directory."
 		echo "${RED}DIRECTORY must be a real and accessible directory.${END_COLOR}"
-		return 1
+		exit 1
 	fi
 	
 	# Move to the backup directory.
-	if ! $(cd "$dir"); then
+	if ! cd "$dir"; then
 		echo "${RED}Error changing directories to $dir ${END_COLOR}"
 		return 1
+	else
+		echo "(DEBUG) Remove_Files: Successfully moved to $dir"
 	fi
 	
 	# This way of processing is a bit more costly but allows a safety check.
@@ -237,13 +253,29 @@ function remove_files()
 	for file in *; do
 		local fileLastMod=$(date -r "$file" +%s)
 		
+		echo "Found: $file"
+		
 		# File is marked as needing to be removed.
 		if [[ "$date" -ge "$fileLastMod" ]]; then
+			echo "File: $file is set to be removed."
 			((numFiles++)) 
 		fi
 		
 		((totalFiles++))
 	done
+	
+	echo "================================="
+	echo "Remove_Files Function Parameters"
+	echo "================================="
+	echo "Directory: $dir"
+	echo "Days: $days"
+	echo "Automated: $automated"
+	echo "Date: $date"
+	echo "TotalFiles: $totalFiles"
+	echo "NumFiles: $numFiles"
+	echo "================================="
+	
+	echo "(DEBUG) Remove_Files: Passed the for-loop."
 	
 	# If numFiles=totalFiles, then this determines if all files in dir will be removed.
 	local deleteAll=
@@ -257,17 +289,16 @@ function remove_files()
 		exit 1
 	# Case in which all files could be removed.
 	elif [[ numFiles -eq totalFiles ]]; then
-		if [[ -z $automated ]]; then
-			local index=1
-			while [ index -eq 1 ]; do
-				echo -n "All files in $dir are over $days days old. Would you like to remove all but the 
-				newest file from the directory? Type n to delete ALL files. Warning: ${RED}This is not recoverable: ${END_COLOR} (y/n/q (quit)):"
+		if [[ -z "$automated" ]]; then
+			delPrompt=
+			while [[ "$delPrompt" != "y" ]] && [[ "$delPrompt" != "n" ]]; do
+				echo -n "All files in $dir are over $days days old. Would you like to save the NEWEST file in the directory and delete the rest? ${RED}Warning: This is not recoverable: ${END_COLOR} (y/n/q (quit)):"
 				read delPrompt
 				
+				echo ""
 				case "$delPrompt" in
 					"y")
 						deleteAll="FALSE"
-						index=0 	# Exit loop
 						;;
 					"q")
 						echo "Exiting without making any changes..."
@@ -275,10 +306,10 @@ function remove_files()
 						;;
 					"n")
 						deleteAll="TRUE"
-						index=0		# Exit loop
 						;;
 					*)
-						echo "Error: Please choose an option."
+						echo "${RED}Error: Please choose a valid option of y or n or q.${END_COLOR}"
+						echo ""
 						;;
 				esac
 			done
@@ -293,11 +324,7 @@ function remove_files()
 	if [[ -z $automated ]]; then
 		if [[ "$deleteAll" == "TRUE" ]]; then
 			for file in *; do
-				if rm -ir "$file"; then
-					echo "Deleting file: $file"
-				else
-					echo "Error deleting $file..."
-				fi
+				remove_file_prompt
 			done
 		elif [[ "$deleteAll" == "FALSE" ]]; then
 			keep_newest_file "$dir"
@@ -305,13 +332,12 @@ function remove_files()
 			for file in *; do
 				local fileLastMod=$(date -r "$file" +%s)
 				if [[ "$date" -ge "$fileLastMod" ]]; then
-					if [[ "$file" -eq "$dir" ]]; then 	# Don't remove the root (backup) directory.
+					# Don't remove the root (backup) directory.
+					if [[ "$file" == "$dir" ]]; then 	
 						echo "Root directory, we should skip."
 						echo "Skipping $dir..."
-					elif rm -ir "$file"; then
-						echo "Deleting file: $file"
 					else
-						echo "Error deleting $file..."
+						remove_file_prompt
 					fi
 				fi
 			done
@@ -323,12 +349,12 @@ function remove_files()
 
 # Run the prune.
 if [[ -z "$automated" ]]; then
-	remove_files "$dir" "$days"
+	remove_files "$directory" "$numDays"
 else
-	remove_files "$dir" "$days" "AUTOMATE"
+	remove_files "$directory" "$numDays" "$automated"
 fi
 
-echo "${GREEN}Successfully removed $numFiles from $dir! ${END_COLOR}"
+echo "${GREEN}Successfully removed $numFilesDeleted files from $directory! ${END_COLOR}"
 
 exit 0
 #EOF
