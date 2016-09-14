@@ -85,7 +85,7 @@ if [[ ! -d $directory ]]; then
 fi
 
 # Make sure the number of days is not zero.
-if [[ $testNumber -eq 0 ]]; then
+if [[ $numDays -eq 0 ]]; then
         echo "Don't put zero"
         exit 1
 fi
