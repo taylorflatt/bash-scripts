@@ -25,7 +25,7 @@ Simple bash script I use to run scheduled backups in Linux.
 A prune script which removes files in a directory older than a set number of days prior. This can be added to the crontab and run non-interactively with the -a flag on a backup directory to remove old backups.
 
 ###Usage
-`./prune.sh -d DIRECTORY -n NUM_DAYS [-a]`
+`./prune.sh -d DIRECTORY -n NUM_DAYS [-ah]`
 
 ###File Parameters
 -d,--directory:   The directory from which files will be pruned.<br />
