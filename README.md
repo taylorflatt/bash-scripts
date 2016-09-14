@@ -11,11 +11,15 @@ Simple bash script I use to run scheduled backups in Linux.
 -d:   The remote storage location of the files specified with the -s parameter.<br />
 -t:   (Optional) Includes a date in the resulting filename (if single file) or directory.
 
-Run a backup of the /opt/myProgram/data folder saving it in the /mnt/share/myBackup/myProgram <br />
-**Example**: `./backup.sh -s /opt/myProgram/data -d /mnt/share/myBackup/myProgram`
+###Examples
+`./backup.sh -s /opt/myProgram/data -d /mnt/share/myBackup/myProgram` <br />
+**Explanation:** Run a backup of the /opt/myProgram/data folder saving it in the /mnt/share/myBackup/myProgram <br />
 
-Run a backup of the same folder and save it in the same location as above but time stamp the directory. <br />
-**Example**: `./backup.sh -d /mnt/share/myBackup/myProgram -t -s /opt/myProgram/data`
+`./backup.sh -d /mnt/share/myBackup/myProgram -t -s /opt/myProgram/data` <br />
+**Explanation:** Run a backup of the same folder and save it in the same location as above but time stamp the directory. <br />
+
+###Notes
+- If using the -t parameter on a directory, only the root directory will be given the timestamp. The files contained within will not contain the timestamp.
 
 # [Prune Script](https://github.com/taylorflatt/bash-scripts/blob/master/prune.sh)
 A prune script which removes files in a directory older than a set number of days prior.
@@ -28,15 +32,16 @@ A prune script which removes files in a directory older than a set number of day
 -n,--days:        Files modded prior to n days ago is subject to pruning. <br />
 -a,--automated:   Runs the script without interaction and perform the least destructive operations.
 
-Runs a prune on the /opt/backup directory and remove files (or directories) last modified over 30 days ago.<br />
-**Example**: `./prune.sh -d /opt/backup -n 30`
+###Examples
+`./prune.sh -d /opt/backup -n 30` <br />
+**Explanation:** Runs a prune on the /opt/backup directory and remove files (or directories) last modified over 30 days ago.
 
-Runs a prune on the /opt/backup directory and removes files (or directories) last modified 2 days ago without prompts.<br />
-**Example**: `./prune -n 2 --directory /opt/backup --automated`
+`./prune -n 2 --directory /opt/backup --automated` <br />
+**Explanation:** Runs a prune on the /opt/backup directory and removes files (or directories) last modified 2 days ago without prompts.
 
-Notes:
--This will not remove the CWD if that is ever possible (it should not be).
--This cannot be run as sudo/root to help reduce the risk of undetermined behavior.
--Running the script in an automated fashion will always leave AT LEAST ONE file left (newest file) in the backup directory.
--Running the script with prompts will ask for confirmation for each delete to be made.
--This deletes both files AND directories.
+###Notes:
+- This will not remove the CWD if that is ever possible (it should not be).
+- This cannot be run as sudo/root to help reduce the risk of undetermined behavior.
+- Running the script in an automated fashion will always leave AT LEAST ONE file left (newest file) in the backup directory.
+- Running the script with prompts will ask for confirmation for each delete to be made.
+- This deletes both files AND directories.
