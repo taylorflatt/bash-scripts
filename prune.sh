@@ -8,10 +8,13 @@
 # -a: Automated flag. This will run the script without user interaction and will take 
 # the safest option in deleting files. It leaves at least the newest backup file.
 #
+# Note: Sudoers and the root user cannot run this script. Limit the amount of possible damage.
+# Not to mention, there is no reason to run as an elevated user.
+#
 # Usage: prune -d DIRECTORY -n NUM_DAYS [-a]
 
 # Prevent Root and Sudo
-if [[ $EUID -eq 0 ]] || [[ -z $SUDO_USER ]]; then
+if [[ $EUID -eq 0 ]] || [[ ! -z $SUDO_USER ]]; then
 	echo "This script cannot be invoked as an elevated user to prevent potentially undesired effects."
 	exit 1
 fi
@@ -81,9 +84,19 @@ if [[ ! -d $directory ]]; then
 	exit 1
 fi
 
+# Make sure the number of days is not zero.
+if [[ $testNumber -eq 0 ]]; then
+        echo "Don't put zero"
+        exit 1
+fi
+
 # Only want a positive integer, compare bitwise.
-expr='^([1-9][0-9]?)+$'
+expr='^(0|[1-9][0-9]*)$'
 if [[ ! $numDays =~ $expr ]]; then
+	echo "${RED}NUM_DAYS must be a positive non-zero integer!${END_COLOR}"
+	print_usage
+	exit 1
+elif [[ $numDays -eq 0 ]]; then
 	echo "${RED}NUM_DAYS must be a positive non-zero integer!${END_COLOR}"
 	print_usage
 	exit 1
@@ -309,11 +322,11 @@ function remove_files()
 }
 
 # Run the prune.
-#if [[ -z "$automated" ]]; then
-#	remove_files "$dir" "$days"
-#else
-#	remove_files "$dir" "$days" "AUTOMATE"
-#fi
+if [[ -z "$automated" ]]; then
+	remove_files "$dir" "$days"
+else
+	remove_files "$dir" "$days" "AUTOMATE"
+fi
 
 echo "${GREEN}Successfully removed $numFiles from $dir! ${END_COLOR}"
 
