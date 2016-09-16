@@ -84,31 +84,28 @@ while :; do
 			exit 0
 			;;
 		-d|--directory)
-			echo "Setting directory"
 			directory=("${2-}")
 			shift
 			;;
 		-n|--days)
-			echo "Setting days"
 			numDays=("${2-}")
 			shift
 			;;
 		-a|--automated)
-			echo "Setting automated"
+			echo "Prune is running in automated mode."
 			automated="TRUE"
 			;;
 		-?*)
 			echo "Error, invalid parameter $1"
 			exit 1
 			;;
-		--)
-			echo "End of parameters"
+		--)		# End of parameters
 			shift
 			break
 			;;
-		*)
-			echo "Breaking loop"
+		*)		# Breaking loop.
 			break
+			;;
 	esac
 	
 	shift
