@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Version 1.0
+# Author: Taylor Flatt
+# Checks the outcome of all tests performed. This script assumes a strict file structure.
+#
+# Usage: tCheck TEST_SET_NUM FIRST_TEST LAST_TEST
+
+# Check Parameters
+switch=0
+if [[ $# != 3 ]]; then
+        echo "Make sure you enter the name of the test along with the first test and last test."
+		switch=1
+fi
+
+# Check if the input consists of numbers.
+regex='^[0-9]+$'
+if ! [[ $1 =~ $regex ]] ; then
+   echo "Please enter a number for TEST_SET_NUM" >&2
+   switch=1
+fi
+
+if ! [[ $2 =~ $regex ]] ; then
+   echo "Please enter a number for NUM_OF_TESTS" >&2
+   switch=1
+fi
+
+if ! [[ $3 =~ $regex ]] ; then
+   echo "Please enter a number for NUM_OF_TESTS" >&2
+   switch=1
+fi
+
+if [[ switch -eq 1 ]]; then
+	echo "Exiting..."
+	exit 1
+fi
+
+# Set test values
+sName='Test_Set_'
+tName='Test'
+sLog=/share/scratch/tflatt/status.log
+
+if [[ -e $sLog ]]; then
+	overwritePrompt=
+	while [[ "$overwritePrompt" != "y" ]] && [[ "$overwritePrompt" != "n" ]]; do
+	
+	printf "The status.log file already exists in this directory. Would you like to delete it? If no, then the program will exit.\n\nDelete (y/n):"
+	read overwritePrompt
+	
+	echo ""
+	case "$overwritePrompt" in
+		"y")
+			echo "Removing $slog....."
+			rm $sLog
+			;;
+		"n")
+			echo "Exiting....."
+			exit 0
+			;;
+		*)
+			echo "$Error: Please choose a valid option of y or n."
+			echo ""
+			;;
+	esac
+done
+fi
+
+testSet=$sName$1
+firstTestNum=$2
+lastTestNum=$3
+
+for (( i = $firstTestNum; i <= $lastTestNum; i++ )); do
+	testName=$tName$i
+	testDir=/share/scratch/tflatt/$testSet/$testName
+	outputLog=/share/scratch/tflatt/$testSet/$testName/Logs/output.log
+	
+	
+	if [[ ! -e $outputLog ]]; then
+		echo "$testDir: The output log for $testName doesn't exist. So either it hasn't started or something went wrong." >> $sLog
+	else
+		if grep -q "All done" $outputLog; then
+			echo "$testDir: $testName finished!" >> $sLog
+		else
+			echo "$testDir: $testName has NOT finished!" >> $sLog
+		fi
+	fi
+done
+
+printf "\nYour test checks can be found at $sLog."
+exit 0
+#EOF
