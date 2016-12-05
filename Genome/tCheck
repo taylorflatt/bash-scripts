@@ -74,7 +74,6 @@ for (( i = $firstTestNum; i <= $lastTestNum; i++ )); do
 	testDir=/share/scratch/tflatt/$testSet/$testName
 	outputLog=/share/scratch/tflatt/$testSet/$testName/Logs/output.log
 	
-	
 	if [[ ! -e $outputLog ]]; then
 		echo "$testDir: The output log for $testName doesn't exist. So either it hasn't started or something went wrong." >> $sLog
 	else
