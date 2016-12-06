@@ -29,7 +29,7 @@ Creates the specific test by reading the config.txt and generating the assembly.
 # [tCheck](https://github.com/taylorflatt/bash-scripts/blob/master/Genome/tCheck)
 Checks specified jobs to determine if they completed successfully.
 
-**Usage**: `./cDir.sh TEST_SET_NUM FIRST_TEST LAST_TEST`
+**Usage**: `./tCheck.sh TEST_SET_NUM FIRST_TEST LAST_TEST`
 
 ###Examples
 `./tCheck.sh 1 1 5` <br />
@@ -37,3 +37,15 @@ Checks specified jobs to determine if they completed successfully.
 
 ###Notes
 - This won't necessarily catch a job that has completed but has errored out.
+
+# [tFinish](https://github.com/taylorflatt/bash-scripts/blob/master/Genome/tFinish)
+Moves the output of the specified range of jobs to an output directory.
+
+**Usage**: `./cFinish.sh TEST_SET_NUM FIRST_TEST LAST_TEST`
+
+###Examples
+`./tFinish.sh 1 1 5` <br />
+**Explanation:** Moves the outputs (CTG/SCF/POSMAP) for Test 1 to Test 5 from Test Set 1 to an output directory.<br />
+
+###Notes
+- This will only grab jobs who have created the output files. If they don't exist, then the program will not copy them. It doesn't go any further. It doesn't check if the job is currently running so there isn't a way for it to know if it is still running or errored out. You'll have to check this yourself.
