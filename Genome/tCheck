@@ -85,6 +85,6 @@ for (( i = $firstTestNum; i <= $lastTestNum; i++ )); do
 	fi
 done
 
-printf "\nYour test checks can be found at $sLog."
+printf "\nYour test checks can be found at $sLog.\n\n"
 exit 0
 #EOF
