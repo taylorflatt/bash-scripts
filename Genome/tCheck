@@ -21,12 +21,12 @@ if ! [[ $1 =~ $regex ]] ; then
 fi
 
 if ! [[ $2 =~ $regex ]] ; then
-   echo "Please enter a number for NUM_OF_TESTS" >&2
+   echo "Please enter a number for FIRST_TEST" >&2
    switch=1
 fi
 
 if ! [[ $3 =~ $regex ]] ; then
-   echo "Please enter a number for NUM_OF_TESTS" >&2
+   echo "Please enter a number for LAST_TEST" >&2
    switch=1
 fi
 
