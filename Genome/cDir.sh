@@ -58,6 +58,6 @@ mkdir -p /share/scratch/tflatt/$testSet/$testName/Logs
 echo "Creating directory /share/scratch/tflatt/Scripts/$testSet/$testName......"
 mkdir -p /share/scratch/tflatt/Scripts/$testSet/$testName
 
-printf "\nAll folders successfully added."
+printf "\nAll folders successfully added.\n\n"
 exit 0
 #EOF
