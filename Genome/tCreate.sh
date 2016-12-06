@@ -71,6 +71,6 @@ cd /share/scratch/tflatt/$testSet/$testName/
 # Add the job to the scheduler.
 qsub -pe make 20 -V -b y -cwd -q largemem.q -o /share/scratch/tflatt/$testSet/$testName/Logs/output.log -e /share/scratch/tflatt/$testSet/$testName/Logs/error.log -N $testName /share/scratch/tflatt/$testSet/$testName/assembly.sh
 
-printf "\nThe job has been added to the scheduler. Run qstat to check on your job or qdel to delete it."
+printf "\nThe job has been added to the scheduler. Run qstat to check on your job or qdel to delete it.\n\n"
 exit 0
 #EOF
