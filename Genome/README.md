@@ -49,3 +49,16 @@ Moves the output of the specified range of jobs to an output directory.
 
 ###Notes
 - This will only grab jobs who have created the output files. If they don't exist, then the program will not copy them. It doesn't go any further. It doesn't check if the job is currently running so there isn't a way for it to know if it is still running or errored out. You'll have to check this yourself.
+
+# [runTest](https://github.com/taylorflatt/bash-scripts/blob/master/Genome/runTest.sh)
+Runs a range of tests on the data against a CLC control and Masurca Control for CTG and SCF output data.
+
+**Usage**: `./runTest.sh TEST_TYPE EVAL_NUM TEST_NUM`
+
+###Examples
+`./tFinish.sh all 0.0000001 4` <br />
+**Explanation:** Runs all comparative blast runs for CLC (CTG/SCF) and Masurca (CTG/SCF) with an e-val of 10^-7 for Test4.<br />
+
+###Notes
+- This assumes a very specific file structure so quickly skim the code and make sure the file structure is appropriate.
+
