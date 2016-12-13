@@ -56,7 +56,7 @@ Runs a range of tests on the data against a CLC control and Masurca Control for 
 **Usage**: `./runTest.sh TEST_TYPE EVAL_NUM TEST_NUM`
 
 ###Examples
-`./tFinish.sh all 0.0000001 4` <br />
+`./runTest.sh all 0.0000001 4` <br />
 **Explanation:** Runs all comparative blast runs for CLC (CTG/SCF) and Masurca (CTG/SCF) with an e-val of 10^-7 for Test4.<br />
 
 ###Notes
