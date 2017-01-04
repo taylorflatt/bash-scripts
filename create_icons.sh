@@ -19,6 +19,7 @@ fi
 # Declare the two arrays.
 declare -a programPaths
 declare -a programData
+declare -a launcherIcons	# Optional
 
 # Create all program paths.
 program1Path="/usr/share/applications/totem.desktop"
@@ -72,6 +73,9 @@ Type=Application"
 # Note, the variables MUST be passed in quoted or it won't properly interpret the data.
 programData=("$program1Data" "$program2Data" "$program3Data")
 
+# (OPTIONAL) List of program names that a launcher icon will be added.
+#launcherIcons=("test2.desktop" "test3.desktop")
+
 # For every program, check if it exists. If it doesn't, create the file and 
 # append the appropriate data to it and modify the permissions appropriately.
 for ((index=0; index < ${#programPaths[@]}; index++)); do
@@ -83,6 +87,40 @@ for ((index=0; index < ${#programPaths[@]}; index++)); do
 		if  touch ${programPaths[$index]}; then
 			echo -e "${programData[$index]}" > ${programPaths[$index]}
 			chmod 644 ${programPaths[$index]}
+			
+			# Maybe need to chown here. Need to check about this.
+			
+			# Gets the path, reverses it, then removes everything after the / leaving 
+			# the backwards filename only. Finally, reverse the file to get the filename.
+			# Note that since it executes in a subshell, you have to capture the output.
+			
+			fileName=$(echo "${programPaths[$index]}" | rev | cut -d '/' -f 1 | rev)
+			echo "Filename from PATH:  $fileName "
+			
+			# Compare against the list of icons that you want added to the launcher in 
+			# case you don't want all.
+			#for ((count=0; count < ${#launcherIcons[@]}; count++)); do
+			#	if [[ "$fileName" = "${launcherIcons[$count]}" ]]; then
+			#		# Add it to the launcher (taskbar).
+			#		echo "Add icon"
+			#	fi
+			#done
+			
+			# Gets the current list of launcher icons.
+			currentFavorites=$(gsettings get com.canonical.Unity.Launcher favorites)
+			
+			# Check to make sure it isn't already added to the favorites list.
+			#if [[ ${currentFavorites} = *"$fileName"* ]]; then
+			#	# File is already added to the favorites list.
+			#fi
+			
+			# Adds the icon to the launcher by appending it to the favorites list.
+			newFavorites=$(echo $currentFavorites | sed s/]/", '${fileName}']"/)
+			
+			# Saves the new settings.
+			gsettings set com.canonical.Unity.Launcher favorites "${newFavorites}"
+			
+			
 		else
 			echo "Failed to create ${programPaths[$index]}"
 			exit 1
