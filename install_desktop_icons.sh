@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Version 1.0
+# Version 1.1
 # Author: Taylor Flatt
-# A script that creates the .desktop files and populates them with the set data.
+# A script that creates the .desktop and icon files and populates them to $remotePath and $remoteIconPath.
+# 
 #
 # Note: This script must be run with sudo to copy/modify the files properly.
 #
@@ -10,11 +11,12 @@
 
 # Create path variables.
 remotePath="/usr/share/applications/"			# Remote wd for *.desktop and icons.
+remoteIconPath="${remotePath}Icons/48x48"		# Remote icon directory.
+
 localIconDir="$(pwd)""/icons"					# Local icon directory.
 localLauncherDir="launcher_desktop/"			# Local launcher directory for *.desktop.
 localNonLauncherDir="nonlauncher_desktop/"		# Local non-launcher directory for *.desktop.
-remoteIconPath="${remotePath}Icons/48x48"		# Remove icon directory.
-scriptName=										# How the script is being called.
+
 copy=0											# Bool to check if ANY files were copied.
 
 # Font colors for error/success messages.
@@ -25,15 +27,15 @@ END_COLOR=`tput sgr0`
 function print_usage()
 {
 	escalated=$1
+
+	echo ""
+	echo "Usage: $0 "; echo ""
+
 	if [[ $escalated -eq 1 ]]; then
-		echo ""
-		echo "Usage: $0 "; echo ""
 		echo ${RED}"This program must be run as sudo.${END_COLOR} Not doing so would result in the"
 		echo "icons and *.desktop files being unable to copy. Please run as sudo."
 		echo ""
 	else
-		echo ""
-		echo "Usage: $0 "; echo ""
 		echo ${RED}"This program doesn't take any parameter inputs.${END_COLOR} It simply "
 		echo "copies the desktop icons and *.desktop to $remotePath."
 		echo ""
@@ -49,35 +51,22 @@ elif [[ $EUID -ne 0 ]] || [[ -z $SUDO_USER ]]; then
 	exit 1
 fi
 
-# Declare the arrays.
-declare -a programPaths
-declare -a programData
-
-# Get the current script's path/name. Depends upon how it was called.
-if [[ ${BASH_SOURCE[0]} != *"$(pwd)"* ]]; then
-	# Local: Remove the ./ from the front of the path to get the name of the script.
-	scriptName="${0: 2}"
-else
-	# Full: Remove the entire path to get the name of the script.
-	scriptName=$(echo "$0" | rev | cut -d '/' -f 1 | rev)
-fi
+# Declare the arrays. Note: that the indexes need to be matching.
+declare -a remoteProgramPaths				# Path where .desktop files will be placed
+declare -a localprogramData					# Data for each .desktop file.
 
 # For every file (with *.desktop) in the cwd and launcher_icon directory, 
 # add it to the program paths and save its data.
 for file in $localNonLauncherDir* $localLauncherDir*; do
-	if [[ ! -d "$file" && "$file" != "$scriptName" && "$file" = *".desktop" ]]; then
-		if [[ "$file" = *"$localLauncherDir"* ]]; then
-			programPaths+=("${remotePath}${file##*/}")
-		else
-			programPaths+=("${remotePath}$file")
-		fi
-		programData+=("$(cat $file)")
+	if [[ ! -d "$file" && "$file" = *".desktop" ]]; then
+		remoteProgramPaths+=("${remotePath}${file##*/}")
+		localprogramData+=("$(cat $file)")
 	fi
 done
 
 # Copy the icons from the CWD to a new icons directory.
-if mkdir -p "$remoteIconPath" &> /dev/null; then
-	if ! cp -r $localIconDir/. $remoteIconPath &> /dev/null; then
+if mkdir -p "$remoteIconPath" 2> /dev/null; then
+	if ! cp -r $localIconDir/. $remoteIconPath 2> /dev/null; then
 		echo ""
 		echo ${RED}"Couldn't copy the contents of the local Icon's directory."${END_COLOR}
 		echo "Make sure the local icons directory exists. The program is"
@@ -93,27 +82,27 @@ else
 	exit 1
 fi
 
-# For every program, check if it exists. If it doesn't, create the file and 
-# append the appropriate data to it and modify the permissions appropriately.
-for ((index=0; index < ${#programPaths[@]}; index++)); do
-	fileContents="$(cat ${programPaths[$index]} 2> /dev/null)"
+# For every *.desktop, check if it exists. If it doesn't exist create it, add the file contents, and 
+# set permissions appropriately. If it differs then modify the existing file.
+for ((index=0; index < ${#remoteProgramPaths[@]}; index++)); do
+	fileContents="$(cat ${remoteProgramPaths[$index]} 2> /dev/null)"
 	# If the file exists (and readable) and its contents are different, then replace the contents.
-	if [[ -r ${programPaths[$index]} && "${programData[$index]}" != "$fileContents" ]]; then
-		echo -e "${programData[$index]}" > ${programPaths[$index]}; copy=1
-		echo ${programPaths[$index]}": Remote contents differ from local modifying remote file..."
-	elif [[ ! -r ${programPaths[$index]} ]]; then
-		echo ${programPaths[$index]}": Creating file..."
-		if touch ${programPaths[$index]}; then
-			echo ${programPaths[$index]}": Adding file contents..."
-			echo -e "${programData[$index]}" > ${programPaths[$index]}; copy=1
-			echo ${programPaths[$index]}": Changing file permissions..."
-			chmod 644 ${programPaths[$index]}
+	if [[ -r ${remoteProgramPaths[$index]} && "${localprogramData[$index]}" != "$fileContents" ]]; then
+		echo -e "${localprogramData[$index]}" > ${remoteProgramPaths[$index]}; copy=1
+		echo ${remoteProgramPaths[$index]}": Remote contents differ from local modifying remote file..."
+	elif [[ ! -r ${remoteProgramPaths[$index]} ]]; then
+		echo ${remoteProgramPaths[$index]}": Creating file..."
+		if touch ${remoteProgramPaths[$index]}; then
+			echo ${remoteProgramPaths[$index]}": Adding file contents..."
+			echo -e "${localprogramData[$index]}" > ${remoteProgramPaths[$index]}; copy=1
+			echo ${remoteProgramPaths[$index]}": Changing file permissions..."
+			chmod 644 ${remoteProgramPaths[$index]}
 		else
-			echo ${RED} ${programPaths[$index]}": ERROR couldn't create file!"${END_COLOR}
+			echo ${RED} ${remoteProgramPaths[$index]}": ERROR couldn't create file!"${END_COLOR}
 			exit 1
 		fi
 	else
-		echo ${programPaths[$index]}": Remote contents are the same as local doing nothing..."
+		echo ${remoteProgramPaths[$index]}": Remote contents are the same as local doing nothing..."
 	fi
 done
 
