@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version 1.2
+# Version 1.3
 # Author: Taylor Flatt
 # A script that creates the .desktop and icon files and populates them to $remotePath and $remoteIconPath.
 # 
@@ -18,7 +18,6 @@ localLauncherDir="${localPath}/launcher_desktop"				# Local launcher directory f
 localNonLauncherDir="${localPath}/nonlauncher_desktop"				# Local non-launcher directory for *.desktop.
 
 desktopCopied=0									# Bool to check if ANY desktop files were copied.
-iconCopied=0									# Bool to check if ANY icon files were copied.
 numFilesCreated=0								# Number of .desktops created in remotePath.
 numFilesModified=0								# Number of .desktops modified in remotePath.
 numIconsCreated=0								# Number of icons created in remoteIconPath.
@@ -75,11 +74,14 @@ iconDirHasIcons="$(ls -A $localIconDir)"
 if [[ -d $localIconDir ]]; then
 	if [[ "$(ls -A $localIconDir)" ]]; then
 		if mkdir -p "$remoteIconPath" 2> /dev/null; then
-			declare -a localIconPath
+			declare -a localIconPath				# Contains the icon names that were copied.
 			for file in $localIconDir/*; do
 				if [[ ! -d "$file" ]]; then
 					if cp $file $remoteIconPath 2> /dev/null; then
-						localIconPath+=($file); iconCopied=1; ((numIconsCreated += 1))
+						#if [[ $file = *".png" ]]; then
+						#	# copy file only if .png"
+						#fi
+						localIconPath+=($file); ((numIconsCreated += 1))
 					else
 						echo ""
 						echo ${RED}"Couldn't copy the contents of:"
@@ -92,18 +94,15 @@ if [[ -d $localIconDir ]]; then
 					fi
 				fi
 			done
-			if [[ $iconCopied -eq 0 ]]; then
-				echo "No icons were copied to ${remoteIconPath}"
-			else
-				# Output all elements of the localIconPath array as being copied
-				echo "Copied the following icons to ${remoteIconPath}"
-				
-				for ((index=0; index < ${#localIconPath[@]}; index++)); do
-					echo "  ${localIconPath[index]}"
-				done
-				echo ""
-			fi
 			
+			# Output all elements of the localIconPath array as being copied
+			echo ""
+			echo "Copied the following icons to ${remoteIconPath}"
+			
+			for ((index=0; index < ${#localIconPath[@]}; index++)); do
+				echo "  ${localIconPath[index]}"
+			done
+			echo ""
 		else
 			echo ""
 			echo "${RED}Couldn't create the remote icon's directory.${END_COLOR}"
@@ -134,7 +133,7 @@ for ((index=0; index < ${#remoteProgramPaths[@]}; index++)); do
 	remoteFileContents="$(cat ${remoteProgramPaths[$index]} 2> /dev/null)"
 	# If the file exists (and readable) and its contents differ, then replace the contents.
 	if [[ -r ${remoteProgramPaths[$index]} && "${localProgramData[$index]}" != "$remoteFileContents" ]]; then
-		echo ${remoteProgramPaths[$index]}": file differs replacing contents."
+		echo ${remoteProgramPaths[$index]}": file differs replacing contents..."
 		echo -e "${localProgramData[$index]}" > ${remoteProgramPaths[$index]}; desktopCopied=1; ((numFilesModified += 1))
 	# Else If the file doesn't exist create it
 	elif [[ ! -e ${remoteProgramPaths[$index]} ]]; then
@@ -145,24 +144,20 @@ for ((index=0; index < ${#remoteProgramPaths[@]}; index++)); do
 			echo ${remoteProgramPaths[$index]}": Changing file permissions..."
 			chmod 644 ${remoteProgramPaths[$index]}
 		else
-			echo ${RED} ${remoteProgramPaths[$index]}": ERROR couldn't create file!"${END_COLOR}
+			echo ${RED}${remoteProgramPaths[$index]}": ERROR couldn't create file!"${END_COLOR}
 			exit 1
 		fi
 	else
-		echo ${remoteProgramPaths[$index]}" is up to date."
+		echo ${remoteProgramPaths[$index]}" is up to date..."
 	fi
 done
 
 # Print the final message depending on what was actually done.
-if [[ $desktopCopied -eq 0 && $iconCopied -eq 0 ]]; then
-	echo "${GREEN}No .desktop or icons were modified or added to $remotePath/* .${END_COLOR}"
-elif [[ $desktopCopied -eq 1 && $iconCopied -eq 0 ]]; then
-	echo "${GREEN}Modified ${numFilesModified} .desktop files and created ${numFilesCreated} in $remotePath/* .${END_COLOR}"
-elif [[ $desktopCopied -eq 0 && $iconCopied -eq 1 ]]; then
-	echo "${GREEN}Completed transfer of ${numIconsCreated} icons to $remotePath/* .${END_COLOR}"
-else
-	echo "${GREEN}Modified ${numFilesModified} .desktop files, created ${numFilesCreated}, and created ${numIconsCreated} in $remotePath/* .{END_COLOR}"
-fi
+echo ""
+echo "    ${GREEN}Modified ${numFilesModified} existing .desktop files, created ${numFilesCreated} new .desktop files, "
+echo "    and created ${numIconsCreated} icons in $remotePath/* .${END_COLOR}"
+echo ""
 
 exit 0
 #EOF
+
