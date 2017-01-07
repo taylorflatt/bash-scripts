@@ -62,7 +62,7 @@ None
 
 ###Notes:
 - This must be run as sudo since it copies files into a permission locked zone (/usr/share/applications).
-- The file structure is IMPORTANT for this script to run properly. There must be a folder named launcher_desktop, nonlauncher_desktop, and icons in the local directory of the script. If any of them are not correctly placed, the script will error out and tell you which ones are not correct.
+- The file structure is __IMPORTANT__ for this script to run properly. There must be a folder named launcher_desktop, nonlauncher_desktop, and icons in the local directory of the script. If any of them are not correctly placed, the script will error out and tell you which ones are not correct.
 - There is an if-statement included that will narrow down the files that are copied in the icons directory if you so wish. You can add any others that you need to that as well. In my situation, it didn't matter. It might in yours.
 - This program will overwrite a .desktop contained within /usr/share/applications if it differs from a local copy contained within either two local launcher directories. So if you have launcher_desktop/firefox.desktop differing from  /usr/share/applications/firefox.desktop then the former will overwrite the latter. Please take notice of this and make a backup of your /usr/share/applications directory if you are unsure.
 
@@ -81,7 +81,7 @@ None
 
 ###Notes:
 - This must NOT be run as sudo since it uses gsettings which will save the settings for the user running the script. In fact, the script will not run as sudo.
-- The file structure is IMPORTANT for this script to run properly. There must be a folder named launcher_desktop in the local directory of the script. If it is not there, then it will not change the launcher icons whatsoever.
+- The file structure is __IMPORTANT__ for this script to run properly. There must be a folder named launcher_desktop in the local directory of the script. If it is not there, then it will not change the launcher icons whatsoever.
 - Currently, this does not remove any launcher icons from the launcher.
 - Uses gsettings to get and set the launcher.
-- You can reset your launcher using gsettings reset com.canonical.Unity.Launcher favorites
+- You can reset your launcher using `gsettings reset com.canonical.Unity.Launcher favorites`
