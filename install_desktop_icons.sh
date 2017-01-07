@@ -12,16 +12,16 @@
 remotePath="/usr/share/applications"						# Remote working dir for *.desktop and icons.
 remoteIconPath="${remotePath}/Icons/48x48"					# Remote icon directory.
 
-localPath="$(pwd)"											# Local working dir. Where the script are located.
-localIconDir="${localPath}/icons"							# Local icon directory.
-localLauncherDir="${localPath}/launcher_desktop"			# Local launcher directory for *.desktop.
-localNonLauncherDir="${localPath}/nonlauncher_desktop"		# Local non-launcher directory for *.desktop.
+localPath="$(pwd)"								# Local working dir. Where the script are located.
+localIconDir="${localPath}/icons"						# Local icon directory.
+localLauncherDir="${localPath}/launcher_desktop"				# Local launcher directory for *.desktop.
+localNonLauncherDir="${localPath}/nonlauncher_desktop"				# Local non-launcher directory for *.desktop.
 
-desktopCopied=0												# Bool to check if ANY desktop files were copied.
-iconCopied=0												# Bool to check if ANY icon files were copied.
-numFilesCreated=0											# Number of .desktops created in remotePath.
-numFilesModified=0											# Number of .desktops modified in remotePath.
-numIconsCreated=0											# Number of icons created in remoteIconPath.
+desktopCopied=0									# Bool to check if ANY desktop files were copied.
+iconCopied=0									# Bool to check if ANY icon files were copied.
+numFilesCreated=0								# Number of .desktops created in remotePath.
+numFilesModified=0								# Number of .desktops modified in remotePath.
+numIconsCreated=0								# Number of icons created in remoteIconPath.
 
 # Font colors for error/success messages.
 RED=`tput setaf 1`
@@ -57,14 +57,14 @@ elif [[ $EUID -ne 0 ]] || [[ -z $SUDO_USER ]]; then
 fi
 
 # Declare the arrays. Note: the indexes will be matching.
-declare -a remoteProgramPaths				# Remote path where .desktop files will be placed
-declare -a localProgramData				# Data for each .desktop file.
+declare -a remoteProgramPaths							# Remote path where .desktop files will be placed
+declare -a localProgramData							# Data for each .desktop file.
 
 # For every file (with *.desktop) in the launcher_icon directory, 
 # add it to the program paths and save its data.
 for file in $localNonLauncherDir/* $localLauncherDir/*; do
 	if [[ ! -d "$file" && "$file" = *".desktop" ]]; then
-		remoteProgramPaths+=("${remotePath}/${file##*/}")	# Add ${remotePath}/$filename
+		remoteProgramPaths+=("${remotePath}/${file##*/}")		# Add ${remotePath}/$filename
 		localProgramData+=("$(cat $file)")
 	fi
 done
