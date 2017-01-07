@@ -9,15 +9,19 @@
 # Usage: sudo ./install_desktop_icons.sh
 
 # Create path variables.
-remotePath="/usr/share/applications"			# Remote working dir for *.desktop and icons.
-remoteIconPath="${remotePath}/Icons/48x48"		# Remote icon directory.
+remotePath="/usr/share/applications"						# Remote working dir for *.desktop and icons.
+remoteIconPath="${remotePath}/Icons/48x48"					# Remote icon directory.
 
-localIconDir="$(pwd)""/icons"				# Local icon directory.
-localLauncherDir="launcher_desktop"			# Local launcher directory for *.desktop.
-localNonLauncherDir="nonlauncher_desktop"		# Local non-launcher directory for *.desktop.
+localPath="$(pwd)"											# Local working dir. Where the script are located.
+localIconDir="${localPath}/icons"							# Local icon directory.
+localLauncherDir="${localPath}/launcher_desktop"			# Local launcher directory for *.desktop.
+localNonLauncherDir="${localPath}/nonlauncher_desktop"		# Local non-launcher directory for *.desktop.
 
-copy=0							# Bool to check if ANY desktop files were copied.
-iconCopied=0						# Bool to check if ANY icon files were copied.
+desktopCopied=0												# Bool to check if ANY desktop files were copied.
+iconCopied=0												# Bool to check if ANY icon files were copied.
+numFilesCreated=0											# Number of .desktops created in remotePath.
+numFilesModified=0											# Number of .desktops modified in remotePath.
+numIconsCreated=0											# Number of icons created in remoteIconPath.
 
 # Font colors for error/success messages.
 RED=`tput setaf 1`
@@ -65,42 +69,60 @@ for file in $localNonLauncherDir/* $localLauncherDir/*; do
 	fi
 done
 
-# Copy the icons from the CWD to a new icons directory.
-if mkdir -p "$remoteIconPath" 2> /dev/null; then
-	declare -a localIconPath
-	for file in $localIconDir/*; do
-		if [[ ! -d "$file" ]]; then
-			if cp $file $remoteIconPath 2> /dev/null; then
-				localIconPath+=($file)
-				iconCopied=1
+iconDirHasIcons="$(ls -A $localIconDir)"
+# Copy the icons from the CWD to a new icons directory if the local icon directory exists 
+# and if it has stuff in it.
+if [[ -d $localIconDir ]]; then
+	if [[ "$(ls -A $localIconDir)" ]]; then
+		if mkdir -p "$remoteIconPath" 2> /dev/null; then
+			declare -a localIconPath
+			for file in $localIconDir/*; do
+				if [[ ! -d "$file" ]]; then
+					if cp $file $remoteIconPath 2> /dev/null; then
+						localIconPath+=($file); iconCopied=1; ((numIconsCreated += 1))
+					else
+						echo ""
+						echo ${RED}"Couldn't copy the contents of:"
+						echo "${file}"${END_COLOR}
+						echo ""
+						echo "Please make sure the following local icons directory exists:"
+						echo "${localIconDir}"
+						echo ""
+						exit 1
+					fi
+				fi
+			done
+			if [[ $iconCopied -eq 0 ]]; then
+				echo "No icons were copied to ${remoteIconPath}"
 			else
+				# Output all elements of the localIconPath array as being copied
+				echo "Copied the following icons to ${remoteIconPath}"
+				
+				for ((index=0; index < ${#localIconPath[@]}; index++)); do
+					echo "  ${localIconPath[index]}"
+				done
 				echo ""
-				echo ${RED}"Couldn't copy the contents of:"
-				echo "${file}"${END_COLOR}
-				echo ""
-				echo "Please make sure the following local icons directory exists:"
-				echo "${localIconDir}"
-				echo ""
-				exit 1
 			fi
+			
+		else
+			echo ""
+			echo "${RED}Couldn't create the remote icon's directory.${END_COLOR}"
+			echo ""
+			echo "Make sure the local icons directory exists."
+			echo "The program is looking to create $remoteIconPath. Make sure there are no typos."
+			echo ""
+			exit 1
 		fi
-	done
-	if [[ $iconCopied -eq 0 ]]; then
-		echo "No icons were copied to ${remoteIconPath}"
 	else
-		# Output all elements of the localIconPath array as being copied
-		echo "Copied the following icons to ${remoteIconPath}"
-		
-		for ((index=0; index < ${#localIconPath[@]}; index++)); do
-			echo "  ${localIconPath[index]}"
-		done
+		echo ""
+		echo "There is nothing inside ${localIconDir}, not copying icons..."
 		echo ""
 	fi
-	
 else
 	echo ""
-	echo "Couldn't create the Icon's directory. Make sure the local icons directory exists."
-	echo "The program is looking for $localIconDir . Make sure there are no typos."
+	echo "${RED}Couldn't find ${localIconDir}!${END_COLOR}"
+	echo ""
+	echo "Make sure that the folder exists."
 	echo ""
 	exit 1
 fi
@@ -113,13 +135,13 @@ for ((index=0; index < ${#remoteProgramPaths[@]}; index++)); do
 	# If the file exists (and readable) and its contents differ, then replace the contents.
 	if [[ -r ${remoteProgramPaths[$index]} && "${localProgramData[$index]}" != "$remoteFileContents" ]]; then
 		echo ${remoteProgramPaths[$index]}": file differs replacing contents."
-		echo -e "${localProgramData[$index]}" > ${remoteProgramPaths[$index]}; copy=1		
+		echo -e "${localProgramData[$index]}" > ${remoteProgramPaths[$index]}; desktopCopied=1; ((numFilesModified += 1))
 	# Else If the file doesn't exist create it
 	elif [[ ! -e ${remoteProgramPaths[$index]} ]]; then
 		echo ${remoteProgramPaths[$index]}": Creating file..."
 		if touch ${remoteProgramPaths[$index]}; then
 			echo ${remoteProgramPaths[$index]}": Adding file contents..."
-			echo -e "${localProgramData[$index]}" > ${remoteProgramPaths[$index]}; copy=1
+			echo -e "${localProgramData[$index]}" > ${remoteProgramPaths[$index]}; desktopCopied=1; ((numFilesCreated += 1))
 			echo ${remoteProgramPaths[$index]}": Changing file permissions..."
 			chmod 644 ${remoteProgramPaths[$index]}
 		else
@@ -132,16 +154,15 @@ for ((index=0; index < ${#remoteProgramPaths[@]}; index++)); do
 done
 
 # Print the final message depending on what was actually done.
-if [[ $copy -eq 0 && $iconCopied -eq 0 ]]; then
-	echo "${GREEN}No .desktop or icons were modified or added to $remotePath/*.${END_COLOR}"
-elif [[ $copy -eq 1 && $iconCopied -eq 0 ]]; then
-	echo "${GREEN}Completed transfer of all *.desktop to $remotePath/*.${END_COLOR}"
-elif [[ $copy -eq 0 && $iconCopied -eq 1 ]]; then
-	echo "${GREEN}Completed transfer of all icons to $remotePath/*.${END_COLOR}"
+if [[ $desktopCopied -eq 0 && $iconCopied -eq 0 ]]; then
+	echo "${GREEN}No .desktop or icons were modified or added to $remotePath/* .${END_COLOR}"
+elif [[ $desktopCopied -eq 1 && $iconCopied -eq 0 ]]; then
+	echo "${GREEN}Modified ${numFilesModified} .desktop files and created ${numFilesCreated} in $remotePath/* .${END_COLOR}"
+elif [[ $desktopCopied -eq 0 && $iconCopied -eq 1 ]]; then
+	echo "${GREEN}Completed transfer of ${numIconsCreated} icons to $remotePath/* .${END_COLOR}"
 else
-	echo "${GREEN}Completed transfer of all *.desktop and icons to $remotePath/*.${END_COLOR}"
+	echo "${GREEN}Modified ${numFilesModified} .desktop files, created ${numFilesCreated}, and created ${numIconsCreated} in $remotePath/* .{END_COLOR}"
 fi
 
 exit 0
 #EOF
-
