@@ -82,6 +82,7 @@ None
 ###Notes:
 - This must NOT be run as sudo since it uses gsettings which will save the settings for the user running the script. In fact, the script will not run as sudo.
 - The file structure is __IMPORTANT__ for this script to run properly. There must be a folder named *launcher_desktop* in the local directory of the script. If it is not there, then it will not change the launcher icons whatsoever.
+- You can add a prefix of ## to the \*.desktop files to force an order to the launcher icons. So 01firefox.desktop and 02chrome.desktop would result in firefox being higher up in the launcher list than chrome. Everything else would fall below those two .desktops.
 - Currently, this does not remove any launcher icons from the launcher.
 - Uses gsettings to get and set the launcher.
 - You can reset your launcher using `gsettings reset com.canonical.Unity.Launcher favorites`
