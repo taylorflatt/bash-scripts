@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version 1.4
+# Version 1.5
 # Author: Taylor Flatt
 # Recursive backup script that will backup both regular files as well as directories. 
 # Meant to be run as a cron script.
@@ -58,11 +58,6 @@ if [[ -z $source ]] || [[ -z $destination ]]; then
 	exit 1
 fi
 
-# Set here so it isn't accidentally overwritten above.
-if [[ ! -z $date ]]; then
-	destination="$destination$date"
-fi
-
 # Function that will copy a file from one directory to another.
 # Parameter 1: A specific file that will be copied to another location.
 # Parameter 2: The destination directory of the file. (Backup location).
@@ -103,6 +98,11 @@ function copy_directory()
 {
 	local fileSource=$1
 	local fileDest=$2
+	
+	# Add the date to the destination if they want it timestamped.
+	if [[ ! -z $date ]]; then
+		fileDest="$2$date"
+	fi
 	
 	local absDestDir=$(realpath "$fileDest" 2> /dev/null)
 	
