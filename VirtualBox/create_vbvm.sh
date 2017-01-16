@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# Version 0.3.1
+# Version 0.4
 # Author: Taylor Flatt
 # Script: Adds a virtual box OS to Virtual Box from a template.
 #
 # Note: This uses a readarray which requires Bash 4.0.
 # Note: Command references: https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm
 # Note: The get_share_path() function WILL NOT return an accurate path if that path contains spaces.
+#
+# TODO: Add (reasonable) default values for things like cores/ram/vram/etc and modify the min_req_check
+#       appropriately. Would likely have to involve checking OS requirement and adjusting based off that.
+#
+# TODO: Be sure to TRIM the whitespace around an inline comment so it isn't translated into the value.
 #
 # Usage: ./create_virtualbox.sh TEMPLATE
 
@@ -34,6 +39,19 @@ numNics=0	# Number of NICs the user put in the template.
 virtex=
 shareName=
 sharePath=
+
+minimum_requirements_check()
+{
+	if [[ $vmName = "" ]] || 
+	   [[ "$os" = "" ]] || 
+	   [[ "$cores" = "" ]] || 
+	   [[ "$ram" = "" ]] ||
+	   [[ "$vram" = "" ]] ||
+	   [[ $numNics -eq 0 ]]; then
+			echo "ERROR: You have not entered the minimum number of items for the VM to be successfully created."
+			exit 1
+	fi
+}
 
 # Gets the text to the right of the input delimited by a :.
 get_value()
@@ -116,6 +134,11 @@ for line in "${lines[@]}"; do
 		"OS:"*)
 			os=$(get_value "$line")
 			;;
+		# Process existing HDD.
+		"HDD:"*)
+			# Assuming SATA, this is an area for future expansion to allow IDE, specification of type, or other options.
+			hddPath=$(get_value "$line")
+			;;
 		# Process CPU Cores.
 		"CORES:"*)
 			cores=$(get_value "$line")
@@ -157,7 +180,7 @@ for line in "${lines[@]}"; do
 				exit 1
 			fi
 			;;
-		# Process NICs. TODO: May need to process extra information about the NIC (specific information).
+		# Process NICs. TODO: May need to process extra information about the NIC (specific information such as adapter).
 		"NIC"*)
 			value=$(get_value "$line")
 			
@@ -173,17 +196,6 @@ for line in "${lines[@]}"; do
 			eval ${nic}=$value
 			
 			((numNics+=1))
-			
-			### DEBUG ###
-			echo ""
-			echo "Value: $value"
-			echo "numNics: $numNics"
-			echo "NIC1: $nic1"
-			echo "NIC2: $nic2"
-			echo "NIC3: $nic3"
-			echo "NIC4: $nic4"
-			echo ""
-			### /DEBUG ###
 			;;
 		# Process VT-X or AMD-V
 		"VTX"*|"AMDV"*)
@@ -213,27 +225,62 @@ done
 
 # Might need to add additional checks for data integrity (expect an INT for ram for instance).
 
+minimum_requirements_check
+
 # Create and register the VM.
-#VBoxManage createvm --name $vmName --ostype "$os" --register
+VBoxManage createvm --name "$vmName" --ostype "$os" --register
 
 # Modify its properties.
-#VBoxManage modifyvm $vmName --cpus "$cores"
-#VBoxManage modifyvm $vmName --memory "$ram" --vram "$vram"
-#VBoxManage modifyvm $vmName --ioapic "$ioapic"
+VBoxManage modifyvm "$vmName" --cpus "$cores"
+VBoxManage modifyvm "$vmName" --memory "$ram" --vram "$vram"
+
+echo ""; echo ""
+echo "--------------------------------------------------------"
+echo "A VM was created with the following properties:"
+echo "	Name: 		$vmName"
+echo "	OS: 		$os"
+echo "	CPU Cores: 	$cores"
+echo "	RAM: 		$ram"
+echo "	VRAM: 		$vram"
+
+# Add existing HDD to VM.
+if [[ "$hddPath" != "" ]]; then
+	VBoxManage storagectl "$vmName" --name "SATA" --add sata --controller "IntelAHCI"
+	VBoxManage storageattach "$vmName" --storagectl "SATA" --port 0 --device 0 --type hdd --medium "$hddPath.vdi"
+	echo "	HDD:		$hddPath"
+fi
+
+# Enable/disable I/O APIC.
+if [[ "$ioapic" != "" ]]; then
+	VBoxManage modifyvm "$vmName" --ioapic "$ioapic"
+	echo "	I/O APIC: 	$ioapic"
+fi
+
+# Enable/disable VT-X or AMD-V
+if [[ "$virtex" != "" ]]; then
+	VBoxManage modifyvm "$vmName" --hwvirtex "$virtex"
+	echo "	VT-X/AMD-V: 	$virtex"
+fi
+
+# Add a share to the VM.	
+if [[ "$shareName" != "" ]]; then
+	VBoxManage sharedfolder "$vmName" --name "$shareName" --hostpath "$sharePath"
+	echo "	$Share:		$sharePath"
+fi
+
+
 
 # Manage the 4 possible adapters.
 for(( index=1; index <= $numNics; index++ )); do
 	# Using indirect substitution, nic[1..4] can be referenced efficiently dynamically.
 	command="nic$index"
-	#VBoxManage modifyvm $vmName --"$command" "${!command}"
+	VBoxManage modifyvm "$vmName" --"$command" "${!command}"
+	echo "	NIC${index}: 		${!command}"
 done
 
-#VBoxManage modifyvm $vmName --hwvirtex "$virtex"
-#VBoxManage sharedfolder $vmName --name $shareName --hostpath $sharePath
-
+echo "--------------------------------------------------------"
+echo ""; echo ""
 
 # If any problem occurs after creating the VM, we should probably unregister it or give the user 
 # the option to do so. The command is: VBoxManage unregistervm $vmName
-
-
 exit 0
