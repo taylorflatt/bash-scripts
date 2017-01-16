@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Version 0.3
+# Version 0.3.1
 # Author: Taylor Flatt
 # Script: Adds a virtual box OS to Virtual Box from a template.
 #
 # Note: This uses a readarray which requires Bash 4.0.
-#
 # Note: Command references: https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm
+# Note: The get_share_path() function WILL NOT return an accurate path if that path contains spaces.
 #
 # Usage: ./create_virtualbox.sh TEMPLATE
 
@@ -22,14 +22,18 @@ if [[ $# -ne 1 ]]; then
 	exit 1
 fi
 
-# Local variables.
+# Global variables.
 template=$1
 vmName=
 os=
+cores=
 ram=
 vram=
 ioapic=
 numNics=0	# Number of NICs the user put in the template.
+virtex=
+shareName=
+sharePath=
 
 # Gets the text to the right of the input delimited by a :.
 get_value()
@@ -44,10 +48,27 @@ get_value()
 	echo "$result"
 }
 
+# Gets the particular NIC number for dynamic variable creation.
 get_nic_num()
 {
 	local nicNum=$(echo "$1" | cut -c 4- | cut -d ':' -f1)
 	echo "$nicNum"
+}
+
+# Gets the name of the share. Should be the FIRST word (and cannot have spaces).
+# The space restriction is also enforced within VirtualBox.
+get_share_name()
+{
+	local shareName=$(echo "$1" | cut -d ' ' -f1)
+	echo "$shareName"
+}
+
+# Gets the absolute path of the share. Should be the SECOND word.
+# NOTE: This WILL fail if the path has spaces in it. Need to figure out an alternative.
+get_share_path()
+{
+	local sharePath=$(echo "$1" | cut -d ' ' -f2)
+	echo "$sharePath"
 }
 
 # Makes sure that the NIC was entered properly with the full range of possible values.
@@ -95,11 +116,21 @@ for line in "${lines[@]}"; do
 		"OS:"*)
 			os=$(get_value "$line")
 			;;
+		# Process CPU Cores.
+		"CORES:"*)
+			cores=$(get_value "$line")
+			
+			# Make sure the cores value is an integer.
+			if [ "$cores" -ne "$cores" ] 2> /dev/null; then
+				echo "ERROR: The CORES value should be an integer representing the number of CPU cores for the VM."
+				exit 1
+			fi
+			;;
 		# Process RAM.
 		"RAM:"*)
 			ram=$(get_value "$line")
 			
-			# Make sure the RAM value is an integer.
+			# Make sure the ram value is an integer.
 			if [ "$ram" -ne "$ram" ] 2> /dev/null; then
 				echo "ERROR: The RAM value should be an integer representing the number of MB of RAM for the VM."
 				exit 1
@@ -165,6 +196,13 @@ for line in "${lines[@]}"; do
 				exit 1
 			fi
 			;;
+		# Process Shared Folders
+		"SHARE:"*)
+			value=$(get_value "$line")
+			
+			shareName=$(get_share_name "$value")
+			sharePath=$(get_share_path "$value")		# NOTE: This will be INCORRECT if the path has spaces in it.			
+			;;
 		# Catch any error/syntax fault.
 		*)
 			echo "Unrecognized syntax: $line"
@@ -179,6 +217,7 @@ done
 #VBoxManage createvm --name $vmName --ostype "$os" --register
 
 # Modify its properties.
+#VBoxManage modifyvm $vmName --cpus "$cores"
 #VBoxManage modifyvm $vmName --memory "$ram" --vram "$vram"
 #VBoxManage modifyvm $vmName --ioapic "$ioapic"
 
@@ -188,6 +227,9 @@ for(( index=1; index <= $numNics; index++ )); do
 	command="nic$index"
 	#VBoxManage modifyvm $vmName --"$command" "${!command}"
 done
+
+#VBoxManage modifyvm $vmName --hwvirtex "$virtex"
+#VBoxManage sharedfolder $vmName --name $shareName --hostpath $sharePath
 
 
 # If any problem occurs after creating the VM, we should probably unregister it or give the user 
