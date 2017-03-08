@@ -13,7 +13,7 @@
 #
 # TODO: Be sure to TRIM the whitespace around an inline comment so it isn't translated into the value.
 #
-# Usage: ./create_virtualbox.sh TEMPLATE
+# Usage: ./create_vbvm.sh TEMPLATE
 
 print_usage()
 {
