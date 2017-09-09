@@ -6,6 +6,7 @@
 # proceed to mount the directory.
 # 
 # Note: This script must be run with root in order to properly mount the directories.
+# Note: This is designed to be running on Unraid. As such I didn't check for a sudoer.
 #
 # Usage: ./checkMounts.sh
 
