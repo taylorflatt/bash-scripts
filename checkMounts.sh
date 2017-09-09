@@ -46,6 +46,7 @@ fi
 declare -a myMounts
 myMounts+=("test_mount")
 
+# Iterates through the mounts checking if they are currently mounted. If not, mount them.
 for ((index=0; index < ${#myMounts[@]}; index++)); do
 	dir="absolute_path_to_mount_point"
 	if  mountpoint -q "${dir}"; then
