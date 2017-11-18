@@ -1,5 +1,5 @@
 # Bash Scripts
-These are simply a collection of scripts that I use personally. Use with caution. I am not accountable for what you do with them.
+These are a collection of scripts that I use personally. Use with caution. I am not accountable for what you do with them.
 
 # [Backup Script](https://github.com/taylorflatt/bash-scripts/blob/master/backup.sh)
 Simple bash script I use to run scheduled backups in Linux.
